@@ -21,7 +21,7 @@ width:100vw;
 height:100vh;
 
 background:
-linear-gradient(135deg,#4d8dff,#090912);
+linear-gradient(135deg,#101020,#304cff);
 
 display:flex;
 align-items:center;
@@ -36,14 +36,14 @@ color:white;
 
 .card{
 
-width:90%;
+width:92%;
 max-width:430px;
 
-background:rgba(20,20,30,.95);
-
-padding:25px;
+background:rgba(20,20,35,.95);
 
 border-radius:35px;
+
+padding:25px;
 
 display:flex;
 
@@ -54,6 +54,8 @@ align-items:center;
 gap:20px;
 
 text-align:center;
+
+box-shadow:0 0 40px rgba(0,0,0,.5);
 
 }
 
@@ -67,13 +69,12 @@ font-size:38px;
 }
 
 
+
 input{
 
 width:100%;
 
 height:70px;
-
-background:#090912;
 
 border:none;
 
@@ -81,13 +82,15 @@ outline:none;
 
 border-radius:25px;
 
+background:#080812;
+
 color:white;
 
 font-size:35px;
 
-letter-spacing:8px;
-
 text-align:center;
+
+letter-spacing:8px;
 
 }
 
@@ -124,6 +127,7 @@ gap:12px;
 }
 
 
+
 .slot{
 
 width:65px;
@@ -134,24 +138,63 @@ border-radius:20px;
 
 transition:.15s;
 
+transform:scale(1);
+
+}
+
+
+
+.slot.spin{
+
+animation:spin .12s infinite alternate;
+
+}
+
+
+
+@keyframes spin{
+
+from{
+
+transform:scale(.85) rotate(-5deg);
+
+}
+
+to{
+
+transform:scale(1.1) rotate(5deg);
+
+}
+
 }
 
 
 
 .red{
-background:#ff4040;
+
+background:#ff3b3b;
+
 }
 
-.yellow{
-background:#ffe640;
-}
-
-.green{
-background:#40ff80;
-}
 
 .blue{
-background:#4090ff;
+
+background:#4080ff;
+
+}
+
+
+.green{
+
+background:#40ff80;
+
+}
+
+
+.yellow{
+
+background:#ffe640;
+
 }
 
 
@@ -161,7 +204,6 @@ background:#4090ff;
 font-size:20px;
 
 }
-
 
 
 </style>
@@ -180,12 +222,14 @@ font-size:20px;
 </h1>
 
 
+
 <input
 id="code"
 maxlength="6"
 inputmode="numeric"
 placeholder="000000"
 >
+
 
 
 <button onclick="connect()">
@@ -196,12 +240,18 @@ Connect
 
 <div id="slots">
 
-<div class="slot"></div>
-<div class="slot"></div>
-<div class="slot"></div>
+
 <div class="slot"></div>
 
+<div class="slot"></div>
+
+<div class="slot"></div>
+
+<div class="slot"></div>
+
+
 </div>
+
 
 
 <div id="status">
@@ -213,6 +263,7 @@ Waiting...
 
 
 
+
 <script>
 
 
@@ -221,33 +272,34 @@ const FIREBASE =
 
 
 
-let code="";
+let currentCode="";
 
 let heartbeat;
 
 
 
 const colors=[
-
 "red",
-"yellow",
+"blue",
 "green",
-"blue"
-
+"yellow"
 ];
 
 
 
 document
 .getElementById("code")
-.oninput=function(){
+.addEventListener(
+"input",
+function(){
 
 this.value=this.value.replace(
 /[^0-9]/g,
 ""
 );
 
-};
+}
+);
 
 
 
@@ -255,7 +307,7 @@ this.value=this.value.replace(
 function sleep(ms){
 
 return new Promise(
-resolve=>setTimeout(resolve,ms)
+r=>setTimeout(r,ms)
 );
 
 }
@@ -266,12 +318,12 @@ resolve=>setTimeout(resolve,ms)
 
 function createPattern(){
 
-let pattern=[];
+let result=[];
 
 
 for(let i=0;i<4;i++){
 
-pattern.push(
+result.push(
 colors[
 Math.floor(
 Math.random()*colors.length
@@ -282,7 +334,7 @@ Math.random()*colors.length
 }
 
 
-return pattern;
+return result;
 
 }
 
@@ -293,18 +345,20 @@ return pattern;
 async function connect(){
 
 
-code=document
-.getElementById("code")
-.value;
+const input =
+document.getElementById("code");
+
+
+currentCode=input.value;
 
 
 
-let status=document
-.getElementById("status");
+const status =
+document.getElementById("status");
 
 
 
-if(code.length!==6){
+if(currentCode.length!==6){
 
 status.innerHTML=
 "❌ Enter 6 numbers";
@@ -315,23 +369,27 @@ return;
 
 
 
-let response=await fetch(
+let check =
+await fetch(
 
 FIREBASE+
-"/connections/"+code+".json"
+"/connections/"+
+currentCode+
+".json"
 
 );
 
 
 
-let data=await response.json();
+let data =
+await check.json();
 
 
 
 if(!data){
 
 status.innerHTML=
-"❌ Code does not exist";
+"❌ Invalid code";
 
 return;
 
@@ -350,23 +408,24 @@ return;
 
 
 
-let pattern=createPattern();
+let pattern =
+createPattern();
 
 
 
 await fetch(
 
 FIREBASE+
-"/connections/"+code+".json",
+"/connections/"+
+currentCode+
+".json",
 
 {
 
 method:"PATCH",
 
 headers:{
-
 "Content-Type":"application/json"
-
 },
 
 body:JSON.stringify({
@@ -375,8 +434,7 @@ connected:true,
 
 pattern:pattern,
 
-heartbeat:
-Date.now()
+heartbeat:Date.now()
 
 })
 
@@ -386,10 +444,7 @@ Date.now()
 
 
 
-document
-.getElementById("code")
-.style.display="none";
-
+input.style.display="none";
 
 document
 .querySelector("button")
@@ -402,7 +457,7 @@ status.innerHTML=
 
 
 
-await roll(pattern);
+await animate(pattern);
 
 
 
@@ -412,7 +467,9 @@ heartbeat=setInterval(()=>{
 fetch(
 
 FIREBASE+
-"/connections/"+code+".json",
+"/connections/"+
+currentCode+
+".json",
 
 {
 
@@ -424,8 +481,7 @@ headers:{
 
 body:JSON.stringify({
 
-heartbeat:
-Date.now()
+heartbeat:Date.now()
 
 })
 
@@ -444,10 +500,10 @@ Date.now()
 
 
 
-async function roll(pattern){
+async function animate(pattern){
 
 
-let slots=
+let slots =
 document.querySelectorAll(".slot");
 
 
@@ -460,17 +516,24 @@ document
 for(let i=0;i<4;i++){
 
 
-for(let x=0;x<20;x++){
+slots[i].classList.add("spin");
 
 
-slots[i]
-.className=
+
+for(let x=0;x<15;x++){
+
+
+slots[i].className =
 "slot "+
+
 colors[
 Math.floor(
 Math.random()*colors.length
 )
-];
+]
+
++" spin";
+
 
 
 await sleep(80);
@@ -480,10 +543,8 @@ await sleep(80);
 
 
 
-slots[i]
-.className=
-"slot "+
-pattern[i];
+slots[i].className =
+"slot "+pattern[i];
 
 
 }
@@ -493,12 +554,10 @@ pattern[i];
 document
 .getElementById("status")
 .innerHTML=
-"✅ Pattern sent";
+"✅ Pattern sent to Roblox";
 
 
 }
-
-
 
 
 
