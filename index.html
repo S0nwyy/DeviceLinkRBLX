@@ -7,7 +7,6 @@
 
 <title>DeviceLink</title>
 
-
 <style>
 
 *{
@@ -15,14 +14,11 @@ box-sizing:border-box;
 font-family:Arial,sans-serif;
 }
 
-
 body{
 
 margin:0;
-height:100vh;
 width:100vw;
-
-overflow:hidden;
+height:100vh;
 
 background:
 linear-gradient(135deg,#4d8dff,#090912);
@@ -31,34 +27,11 @@ display:flex;
 align-items:center;
 justify-content:center;
 
+overflow:hidden;
+
 color:white;
 
 }
-
-
-
-#app{
-
-width:100%;
-height:100%;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-transition:1s;
-
-}
-
-
-
-.hide{
-
-opacity:0;
-transform:scale(.85);
-
-}
-
 
 
 .card{
@@ -66,13 +39,11 @@ transform:scale(.85);
 width:90%;
 max-width:430px;
 
-background:rgba(20,20,30,.9);
-
-backdrop-filter:blur(25px);
-
-border-radius:35px;
+background:rgba(20,20,30,.95);
 
 padding:25px;
+
+border-radius:35px;
 
 display:flex;
 
@@ -87,15 +58,13 @@ text-align:center;
 }
 
 
-
 h1{
-
-font-size:38px;
 
 margin:0;
 
-}
+font-size:38px;
 
+}
 
 
 input{
@@ -104,13 +73,13 @@ width:100%;
 
 height:70px;
 
+background:#090912;
+
 border:none;
 
 outline:none;
 
 border-radius:25px;
-
-background:#080812;
 
 color:white;
 
@@ -148,12 +117,11 @@ font-weight:bold;
 
 #slots{
 
-display:flex;
+display:none;
 
 gap:12px;
 
 }
-
 
 
 .slot{
@@ -163,6 +131,8 @@ width:65px;
 height:65px;
 
 border-radius:20px;
+
+transition:.15s;
 
 }
 
@@ -202,8 +172,6 @@ font-size:20px;
 <body>
 
 
-<div id="app">
-
 <div class="card">
 
 
@@ -212,7 +180,7 @@ font-size:20px;
 </h1>
 
 
-<input 
+<input
 id="code"
 maxlength="6"
 inputmode="numeric"
@@ -225,7 +193,8 @@ Connect
 </button>
 
 
-<div id="slots" style="display:none">
+
+<div id="slots">
 
 <div class="slot"></div>
 <div class="slot"></div>
@@ -239,8 +208,6 @@ Connect
 Waiting...
 </div>
 
-
-</div>
 
 </div>
 
@@ -275,10 +242,12 @@ document
 .getElementById("code")
 .oninput=function(){
 
-this.value=this.value.replace(/[^0-9]/g,"");
+this.value=this.value.replace(
+/[^0-9]/g,
+""
+);
 
-}
-
+};
 
 
 
@@ -295,21 +264,25 @@ resolve=>setTimeout(resolve,ms)
 
 
 
-function randomPattern(){
+function createPattern(){
 
-let arr=[];
+let pattern=[];
 
 
 for(let i=0;i<4;i++){
 
-arr.push(
-colors[Math.floor(Math.random()*colors.length)]
+pattern.push(
+colors[
+Math.floor(
+Math.random()*colors.length
+)
+]
 );
 
 }
 
 
-return arr;
+return pattern;
 
 }
 
@@ -358,7 +331,7 @@ let data=await response.json();
 if(!data){
 
 status.innerHTML=
-"❌ Code not found";
+"❌ Code does not exist";
 
 return;
 
@@ -377,7 +350,7 @@ return;
 
 
 
-let pattern=randomPattern();
+let pattern=createPattern();
 
 
 
@@ -402,7 +375,8 @@ connected:true,
 
 pattern:pattern,
 
-heartbeat:Date.now()
+heartbeat:
+Date.now()
 
 })
 
@@ -413,7 +387,7 @@ heartbeat:Date.now()
 
 
 document
-.querySelector("input")
+.getElementById("code")
 .style.display="none";
 
 
@@ -424,7 +398,7 @@ document
 
 
 status.innerHTML=
-"🎰 Generating pattern...";
+"🎰 Creating pattern...";
 
 
 
@@ -445,14 +419,13 @@ FIREBASE+
 method:"PATCH",
 
 headers:{
-
 "Content-Type":"application/json"
-
 },
 
 body:JSON.stringify({
 
-heartbeat:Date.now()
+heartbeat:
+Date.now()
 
 })
 
@@ -487,7 +460,7 @@ document
 for(let i=0;i<4;i++){
 
 
-for(let x=0;x<15;x++){
+for(let x=0;x<20;x++){
 
 
 slots[i]
@@ -520,10 +493,12 @@ pattern[i];
 document
 .getElementById("status")
 .innerHTML=
-"✅ Pattern sent to Roblox";
+"✅ Pattern sent";
 
 
 }
+
+
 
 
 
