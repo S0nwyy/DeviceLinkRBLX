@@ -12,23 +12,28 @@
 
 *{
 box-sizing:border-box;
-font-family:Arial,Helvetica,sans-serif;
+font-family:Inter,Arial,sans-serif;
 }
 
 
 body{
 
 margin:0;
+
 height:100vh;
 
 display:flex;
+
 align-items:center;
+
 justify-content:center;
 
 background:
-linear-gradient(135deg,#050816,#305cff);
+radial-gradient(circle at top,#315cff,#050816 60%);
 
 color:white;
+
+overflow:hidden;
 
 }
 
@@ -37,19 +42,47 @@ color:white;
 .card{
 
 width:92%;
+
 max-width:430px;
 
 padding:30px;
 
-background:
-rgba(20,25,50,.95);
-
 border-radius:35px;
+
+background:
+rgba(20,25,50,.85);
+
+backdrop-filter:blur(20px);
+
+box-shadow:
+0 0 60px rgba(0,0,0,.5);
 
 text-align:center;
 
-box-shadow:
-0 0 50px rgba(0,0,0,.5);
+animation:
+open .6s ease;
+
+}
+
+
+
+@keyframes open{
+
+from{
+
+opacity:0;
+
+transform:translateY(30px) scale(.9);
+
+}
+
+to{
+
+opacity:1;
+
+transform:none;
+
+}
 
 }
 
@@ -57,9 +90,9 @@ box-shadow:
 
 h1{
 
-font-size:38px;
+font-size:40px;
 
-margin:0 0 20px;
+margin:0 0 25px;
 
 }
 
@@ -77,7 +110,7 @@ outline:none;
 
 border-radius:25px;
 
-background:#070b18;
+background:#080c1c;
 
 color:white;
 
@@ -91,15 +124,23 @@ letter-spacing:8px;
 
 
 
-.mainButton{
+button{
+
+border:none;
+
+cursor:pointer;
+
+}
+
+
+
+.connect{
 
 width:100%;
 
 height:60px;
 
-margin-top:15px;
-
-border:none;
+margin-top:20px;
 
 border-radius:25px;
 
@@ -111,15 +152,27 @@ font-size:22px;
 
 font-weight:bold;
 
+transition:.2s;
+
+}
+
+
+
+.connect:active{
+
+transform:scale(.95);
+
 }
 
 
 
 #pattern{
 
-font-size:38px;
+font-size:40px;
 
-margin:25px;
+min-height:60px;
+
+margin:25px 0;
 
 }
 
@@ -141,11 +194,19 @@ gap:15px;
 
 height:90px;
 
-border:none;
-
 border-radius:25px;
 
 font-size:45px;
+
+transition:.15s;
+
+}
+
+
+
+.color:active{
+
+transform:scale(.9);
 
 }
 
@@ -182,7 +243,7 @@ background:#ffe640;
 
 #status{
 
-margin-top:20px;
+margin-top:25px;
 
 font-size:20px;
 
@@ -197,10 +258,11 @@ color:#40ff80;
 }
 
 
+
 </style>
 
-</head>
 
+</head>
 
 
 <body>
@@ -214,25 +276,29 @@ color:#40ff80;
 </h1>
 
 
+
 <input
 id="code"
 maxlength="6"
-placeholder="000000"
 inputmode="numeric"
+placeholder="000000"
 >
 
 
+
 <button
-class="mainButton"
+class="connect"
 onclick="connect()">
 
-Connect
+Connect Device
 
 </button>
 
 
 
+
 <div id="pattern"></div>
+
 
 
 
@@ -248,7 +314,6 @@ onclick="press('red')">
 </button>
 
 
-
 <button
 class="color blue"
 onclick="press('blue')">
@@ -258,7 +323,6 @@ onclick="press('blue')">
 </button>
 
 
-
 <button
 class="color green"
 onclick="press('green')">
@@ -266,7 +330,6 @@ onclick="press('green')">
 🟢
 
 </button>
-
 
 
 <button
@@ -282,11 +345,13 @@ onclick="press('yellow')">
 
 
 
+
 <div id="status">
 
-Waiting...
+Waiting for connection...
 
 </div>
+
 
 
 </div>
@@ -326,6 +391,20 @@ yellow:"🟡"
 
 
 
+function sleep(ms){
+
+return new Promise(
+resolve=>setTimeout(resolve,ms)
+);
+
+}
+
+
+
+
+
+
+
 async function connect(){
 
 
@@ -342,7 +421,7 @@ document.getElementById("status");
 if(code.length!==6){
 
 status.innerHTML =
-"❌ Enter 6 numbers";
+"❌ Enter a 6 digit code";
 
 return;
 
@@ -352,7 +431,7 @@ return;
 
 
 
-let request =
+let response =
 await fetch(
 
 FIREBASE+
@@ -365,14 +444,16 @@ code+
 
 
 let data =
-await request.json();
+await response.json();
+
+
 
 
 
 if(!data){
 
 status.innerHTML =
-"❌ Invalid code";
+"❌ Code not found";
 
 return;
 
@@ -415,18 +496,21 @@ heartbeat:Date.now()
 
 
 
+
 document.getElementById("code").style.display="none";
 
-document.querySelector(".mainButton").style.display="none";
+document.querySelector(".connect").style.display="none";
 
 
 
 status.innerHTML =
-"🟢 Connected";
+"🟢 Device Connected";
 
 
 
-showPattern(data.pattern);
+await showPattern(data.challenge);
+
+
 
 
 
@@ -462,6 +546,7 @@ heartbeat:Date.now()
 );
 
 
+
 },5000);
 
 
@@ -475,7 +560,6 @@ heartbeat:Date.now()
 
 
 async function showPattern(pattern){
-
 
 
 let box =
@@ -494,23 +578,19 @@ box.innerHTML +=
 emoji[color]+" ";
 
 
-await new Promise(
-r=>setTimeout(r,800)
-);
+await sleep(800);
 
 
 }
 
 
 
-await new Promise(
-r=>setTimeout(r,500)
-);
+await sleep(500);
 
 
 
 box.innerHTML =
-"Repeat!";
+"Repeat";
 
 
 
@@ -595,7 +675,7 @@ document.getElementById("buttons")
 
 document.getElementById("status")
 .innerHTML =
-"⌛ Checking...";
+"⌛ Checking answer...";
 
 
 
@@ -603,7 +683,6 @@ answer=[];
 
 
 }
-
 
 
 </script>
