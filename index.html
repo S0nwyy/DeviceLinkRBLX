@@ -14,55 +14,45 @@ box-sizing:border-box;
 font-family:Arial,sans-serif;
 }
 
+
 body{
 
 margin:0;
-width:100vw;
 height:100vh;
 
 background:
-linear-gradient(135deg,#101020,#304cff);
+linear-gradient(135deg,#050816,#304cff);
 
 display:flex;
 align-items:center;
 justify-content:center;
-
-overflow:hidden;
 
 color:white;
 
 }
 
 
+
 .card{
 
-width:92%;
-max-width:430px;
+width:90%;
+max-width:420px;
 
-background:rgba(20,20,35,.95);
-
-border-radius:35px;
+background:#14182b;
 
 padding:25px;
 
-display:flex;
-
-flex-direction:column;
-
-align-items:center;
-
-gap:20px;
+border-radius:35px;
 
 text-align:center;
 
-box-shadow:0 0 40px rgba(0,0,0,.5);
+box-shadow:0 0 50px #000;
 
 }
 
 
-h1{
 
-margin:0;
+h1{
 
 font-size:38px;
 
@@ -74,19 +64,19 @@ input{
 
 width:100%;
 
-height:70px;
+height:65px;
+
+border-radius:20px;
 
 border:none;
 
 outline:none;
 
-border-radius:25px;
-
-background:#080812;
+background:#080b18;
 
 color:white;
 
-font-size:35px;
+font-size:32px;
 
 text-align:center;
 
@@ -98,73 +88,55 @@ letter-spacing:8px;
 
 button{
 
-width:100%;
-
-height:60px;
-
 border:none;
 
 border-radius:25px;
 
-background:#4d8dff;
+height:60px;
 
-color:white;
-
-font-size:22px;
+font-size:25px;
 
 font-weight:bold;
 
+color:white;
+
+background:#4d8dff;
+
+width:100%;
+
+margin-top:15px;
+
 }
 
 
 
-#slots{
+#memory{
+
+font-size:35px;
+
+margin:20px;
+
+}
+
+
+
+#buttons{
 
 display:none;
 
-gap:12px;
+grid-template-columns:1fr 1fr;
+
+gap:15px;
 
 }
 
 
 
-.slot{
+.color{
 
-width:65px;
+height:90px;
 
-height:65px;
-
-border-radius:20px;
-
-transition:.15s;
-
-transform:scale(1);
-
-}
-
-
-
-.slot.spin{
-
-animation:spin .12s infinite alternate;
-
-}
-
-
-
-@keyframes spin{
-
-from{
-
-transform:scale(.85) rotate(-5deg);
-
-}
-
-to{
-
-transform:scale(1.1) rotate(5deg);
-
-}
+font-size:40px;
 
 }
 
@@ -201,6 +173,8 @@ background:#ffe640;
 
 #status{
 
+margin-top:20px;
+
 font-size:20px;
 
 }
@@ -222,14 +196,12 @@ font-size:20px;
 </h1>
 
 
-
 <input
 id="code"
 maxlength="6"
-inputmode="numeric"
 placeholder="000000"
+inputmode="numeric"
 >
-
 
 
 <button onclick="connect()">
@@ -238,16 +210,34 @@ Connect
 
 
 
-<div id="slots">
+<div id="memory"></div>
 
 
-<div class="slot"></div>
 
-<div class="slot"></div>
+<div id="buttons">
 
-<div class="slot"></div>
+<button class="color red"
+onclick="press('red')">
+🔴
+</button>
 
-<div class="slot"></div>
+
+<button class="color blue"
+onclick="press('blue')">
+🔵
+</button>
+
+
+<button class="color green"
+onclick="press('green')">
+🟢
+</button>
+
+
+<button class="color yellow"
+onclick="press('yellow')">
+🟡
+</button>
 
 
 </div>
@@ -274,33 +264,9 @@ const FIREBASE =
 
 let currentCode="";
 
+let answer=[];
+
 let heartbeat;
-
-
-
-const colors=[
-"red",
-"blue",
-"green",
-"yellow"
-];
-
-
-
-document
-.getElementById("code")
-.addEventListener(
-"input",
-function(){
-
-this.value=this.value.replace(
-/[^0-9]/g,
-""
-);
-
-}
-);
-
 
 
 
@@ -316,44 +282,15 @@ r=>setTimeout(r,ms)
 
 
 
-function createPattern(){
-
-let result=[];
-
-
-for(let i=0;i<4;i++){
-
-result.push(
-colors[
-Math.floor(
-Math.random()*colors.length
-)
-]
-);
-
-}
-
-
-return result;
-
-}
-
-
-
-
-
 async function connect(){
 
 
-const input =
-document.getElementById("code");
-
-
-currentCode=input.value;
+currentCode =
+document.getElementById("code").value;
 
 
 
-const status =
+let status =
 document.getElementById("status");
 
 
@@ -361,7 +298,7 @@ document.getElementById("status");
 if(currentCode.length!==6){
 
 status.innerHTML=
-"❌ Enter 6 numbers";
+"❌ Enter 6 digit code";
 
 return;
 
@@ -369,7 +306,8 @@ return;
 
 
 
-let check =
+
+let res =
 await fetch(
 
 FIREBASE+
@@ -382,7 +320,7 @@ currentCode+
 
 
 let data =
-await check.json();
+await res.json();
 
 
 
@@ -395,21 +333,6 @@ return;
 
 }
 
-
-
-if(data.connected){
-
-status.innerHTML=
-"❌ Already connected";
-
-return;
-
-}
-
-
-
-let pattern =
-createPattern();
 
 
 
@@ -432,8 +355,6 @@ body:JSON.stringify({
 
 connected:true,
 
-pattern:pattern,
-
 heartbeat:Date.now()
 
 })
@@ -444,20 +365,18 @@ heartbeat:Date.now()
 
 
 
-input.style.display="none";
+document.getElementById("code").style.display="none";
 
-document
-.querySelector("button")
-.style.display="none";
+document.querySelector("button").style.display="none";
 
 
 
 status.innerHTML=
-"🎰 Creating pattern...";
+"🟢 Connected";
 
 
 
-await animate(pattern);
+showPattern(data.pattern);
 
 
 
@@ -490,6 +409,7 @@ heartbeat:Date.now()
 );
 
 
+
 },5000);
 
 
@@ -500,61 +420,147 @@ heartbeat:Date.now()
 
 
 
-async function animate(pattern){
+async function showPattern(pattern){
 
 
-let slots =
-document.querySelectorAll(".slot");
-
-
-document
-.getElementById("slots")
-.style.display="flex";
+let memory =
+document.getElementById("memory");
 
 
 
-for(let i=0;i<4;i++){
-
-
-slots[i].classList.add("spin");
+memory.innerHTML="";
 
 
 
-for(let x=0;x<15;x++){
+for(let color of pattern){
 
 
-slots[i].className =
-"slot "+
-
-colors[
-Math.floor(
-Math.random()*colors.length
-)
-]
-
-+" spin";
+memory.innerHTML+=
+emoji(color)+" ";
 
 
+await sleep(800);
 
-await sleep(80);
+
+}
+
+
+await sleep(500);
+
+
+
+memory.innerHTML=
+"Repeat!";
+
+
+
+document.getElementById("buttons")
+.style.display="grid";
+
 
 
 }
 
 
 
-slots[i].className =
-"slot "+pattern[i];
+
+
+
+function emoji(color){
+
+
+return {
+
+red:"🔴",
+
+blue:"🔵",
+
+green:"🟢",
+
+yellow:"🟡"
+
+
+}[color];
 
 
 }
 
 
 
-document
-.getElementById("status")
+
+
+
+function press(color){
+
+
+answer.push(color);
+
+
+
+document.getElementById("status")
 .innerHTML=
-"✅ Pattern sent to Roblox";
+"Selected: "+
+answer.length+"/4";
+
+
+
+if(answer.length===4){
+
+sendAnswer();
+
+}
+
+
+}
+
+
+
+
+
+
+
+async function sendAnswer(){
+
+
+
+await fetch(
+
+FIREBASE+
+"/connections/"+
+currentCode+
+".json",
+
+{
+
+method:"PATCH",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+answer:answer
+
+})
+
+}
+
+);
+
+
+
+document.getElementById("buttons")
+.style.display="none";
+
+
+document.getElementById("status")
+.innerHTML=
+"⌛ Checking...";
+
+
+
+answer=[];
 
 
 }
