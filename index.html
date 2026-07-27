@@ -7,11 +7,12 @@
 
 <title>DeviceLink</title>
 
+
 <style>
 
 *{
 box-sizing:border-box;
-font-family:Arial,sans-serif;
+font-family:Arial,Helvetica,sans-serif;
 }
 
 
@@ -20,12 +21,12 @@ body{
 margin:0;
 height:100vh;
 
-background:
-linear-gradient(135deg,#050816,#304cff);
-
 display:flex;
 align-items:center;
 justify-content:center;
+
+background:
+linear-gradient(135deg,#050816,#305cff);
 
 color:white;
 
@@ -35,18 +36,20 @@ color:white;
 
 .card{
 
-width:90%;
-max-width:420px;
+width:92%;
+max-width:430px;
 
-background:#14182b;
+padding:30px;
 
-padding:25px;
+background:
+rgba(20,25,50,.95);
 
 border-radius:35px;
 
 text-align:center;
 
-box-shadow:0 0 50px #000;
+box-shadow:
+0 0 50px rgba(0,0,0,.5);
 
 }
 
@@ -56,6 +59,8 @@ h1{
 
 font-size:38px;
 
+margin:0 0 20px;
+
 }
 
 
@@ -64,15 +69,15 @@ input{
 
 width:100%;
 
-height:65px;
-
-border-radius:20px;
+height:70px;
 
 border:none;
 
 outline:none;
 
-background:#080b18;
+border-radius:25px;
+
+background:#070b18;
 
 color:white;
 
@@ -86,35 +91,35 @@ letter-spacing:8px;
 
 
 
-button{
+.mainButton{
+
+width:100%;
+
+height:60px;
+
+margin-top:15px;
 
 border:none;
 
 border-radius:25px;
 
-height:60px;
-
-font-size:25px;
-
-font-weight:bold;
+background:#4d8dff;
 
 color:white;
 
-background:#4d8dff;
+font-size:22px;
 
-width:100%;
-
-margin-top:15px;
+font-weight:bold;
 
 }
 
 
 
-#memory{
+#pattern{
 
-font-size:35px;
+font-size:38px;
 
-margin:20px;
+margin:25px;
 
 }
 
@@ -136,7 +141,11 @@ gap:15px;
 
 height:90px;
 
-font-size:40px;
+border:none;
+
+border-radius:25px;
+
+font-size:45px;
 
 }
 
@@ -180,9 +189,18 @@ font-size:20px;
 }
 
 
+
+.online{
+
+color:#40ff80;
+
+}
+
+
 </style>
 
 </head>
+
 
 
 <body>
@@ -204,39 +222,59 @@ inputmode="numeric"
 >
 
 
-<button onclick="connect()">
+<button
+class="mainButton"
+onclick="connect()">
+
 Connect
+
 </button>
 
 
 
-<div id="memory"></div>
+<div id="pattern"></div>
 
 
 
 <div id="buttons">
 
-<button class="color red"
+
+<button
+class="color red"
 onclick="press('red')">
+
 🔴
+
 </button>
 
 
-<button class="color blue"
+
+<button
+class="color blue"
 onclick="press('blue')">
+
 🔵
+
 </button>
 
 
-<button class="color green"
+
+<button
+class="color green"
 onclick="press('green')">
+
 🟢
+
 </button>
 
 
-<button class="color yellow"
+
+<button
+class="color yellow"
 onclick="press('yellow')">
+
 🟡
+
 </button>
 
 
@@ -245,7 +283,9 @@ onclick="press('yellow')">
 
 
 <div id="status">
+
 Waiting...
+
 </div>
 
 
@@ -262,7 +302,7 @@ const FIREBASE =
 
 
 
-let currentCode="";
+let code="";
 
 let answer=[];
 
@@ -270,13 +310,17 @@ let heartbeat;
 
 
 
-function sleep(ms){
+const emoji={
 
-return new Promise(
-r=>setTimeout(r,ms)
-);
+red:"🔴",
 
-}
+blue:"🔵",
+
+green:"🟢",
+
+yellow:"🟡"
+
+};
 
 
 
@@ -285,7 +329,7 @@ r=>setTimeout(r,ms)
 async function connect(){
 
 
-currentCode =
+code =
 document.getElementById("code").value;
 
 
@@ -295,10 +339,10 @@ document.getElementById("status");
 
 
 
-if(currentCode.length!==6){
+if(code.length!==6){
 
-status.innerHTML=
-"❌ Enter 6 digit code";
+status.innerHTML =
+"❌ Enter 6 numbers";
 
 return;
 
@@ -307,12 +351,13 @@ return;
 
 
 
-let res =
+
+let request =
 await fetch(
 
 FIREBASE+
 "/connections/"+
-currentCode+
+code+
 ".json"
 
 );
@@ -320,13 +365,13 @@ currentCode+
 
 
 let data =
-await res.json();
+await request.json();
 
 
 
 if(!data){
 
-status.innerHTML=
+status.innerHTML =
 "❌ Invalid code";
 
 return;
@@ -336,11 +381,12 @@ return;
 
 
 
+
 await fetch(
 
 FIREBASE+
 "/connections/"+
-currentCode+
+code+
 ".json",
 
 {
@@ -348,7 +394,10 @@ currentCode+
 method:"PATCH",
 
 headers:{
-"Content-Type":"application/json"
+
+"Content-Type":
+"application/json"
+
 },
 
 body:JSON.stringify({
@@ -365,13 +414,14 @@ heartbeat:Date.now()
 
 
 
+
 document.getElementById("code").style.display="none";
 
-document.querySelector("button").style.display="none";
+document.querySelector(".mainButton").style.display="none";
 
 
 
-status.innerHTML=
+status.innerHTML =
 "🟢 Connected";
 
 
@@ -387,7 +437,7 @@ fetch(
 
 FIREBASE+
 "/connections/"+
-currentCode+
+code+
 ".json",
 
 {
@@ -395,7 +445,10 @@ currentCode+
 method:"PATCH",
 
 headers:{
-"Content-Type":"application/json"
+
+"Content-Type":
+"application/json"
+
 },
 
 body:JSON.stringify({
@@ -409,7 +462,6 @@ heartbeat:Date.now()
 );
 
 
-
 },5000);
 
 
@@ -420,36 +472,44 @@ heartbeat:Date.now()
 
 
 
+
+
 async function showPattern(pattern){
 
 
-let memory =
-document.getElementById("memory");
+
+let box =
+document.getElementById("pattern");
 
 
 
-memory.innerHTML="";
+box.innerHTML="";
 
 
 
 for(let color of pattern){
 
 
-memory.innerHTML+=
-emoji(color)+" ";
+box.innerHTML +=
+emoji[color]+" ";
 
 
-await sleep(800);
+await new Promise(
+r=>setTimeout(r,800)
+);
 
 
 }
 
 
-await sleep(500);
+
+await new Promise(
+r=>setTimeout(r,500)
+);
 
 
 
-memory.innerHTML=
+box.innerHTML =
 "Repeat!";
 
 
@@ -458,32 +518,8 @@ document.getElementById("buttons")
 .style.display="grid";
 
 
-
 }
 
-
-
-
-
-
-function emoji(color){
-
-
-return {
-
-red:"🔴",
-
-blue:"🔵",
-
-green:"🟢",
-
-yellow:"🟡"
-
-
-}[color];
-
-
-}
 
 
 
@@ -498,9 +534,8 @@ answer.push(color);
 
 
 document.getElementById("status")
-.innerHTML=
-"Selected: "+
-answer.length+"/4";
+.innerHTML =
+"Selected "+answer.length+"/4";
 
 
 
@@ -527,7 +562,7 @@ await fetch(
 
 FIREBASE+
 "/connections/"+
-currentCode+
+code+
 ".json",
 
 {
@@ -535,7 +570,10 @@ currentCode+
 method:"PATCH",
 
 headers:{
-"Content-Type":"application/json"
+
+"Content-Type":
+"application/json"
+
 },
 
 body:JSON.stringify({
@@ -554,8 +592,9 @@ document.getElementById("buttons")
 .style.display="none";
 
 
+
 document.getElementById("status")
-.innerHTML=
+.innerHTML =
 "⌛ Checking...";
 
 
