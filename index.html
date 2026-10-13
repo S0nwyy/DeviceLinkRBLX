@@ -10,61 +10,55 @@ body {
   background: radial-gradient(circle at 50% 0%, #1b2a5e, #050816 65%);
   color: #fff; overflow: hidden; touch-action: none;
 }
-.card {
-  width: 92%; max-width: 400px; padding: 34px 26px; border-radius: 28px;
+.card { width: 92%; max-width: 400px; padding: 34px 26px; border-radius: 28px;
   background: rgba(18,22,38,.92); border: 1px solid #2a3148;
   backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  text-align: center; transition: .35s ease;
-}
+  text-align: center; transition: .35s ease; }
 .card.compact { padding: 26px; }
 h1 { font-size: 25px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
 .sub { font-size: 13px; color: #8a90a6; margin-bottom: 20px; }
-input {
-  width: 100%; height: 58px; border: 1px solid #2a3148; outline: none;
+input { width: 100%; height: 58px; border: 1px solid #2a3148; outline: none;
   border-radius: 18px; background: #0a0e1c; color: #fff; font-size: 27px;
-  text-align: center; letter-spacing: 8px; transition: border .2s;
-}
+  text-align: center; letter-spacing: 8px; transition: border .2s; }
 input:focus { border-color: #4d8dff; }
 button { border: none; cursor: pointer; font-family: inherit; }
 .connect { width: 100%; height: 54px; margin-top: 14px; border-radius: 18px;
-  background: #4d8dff; color: #fff; font-size: 17px; font-weight: 600; transition: .15s; }
+  background: #4d8dff; color: #fff; font-size: 17px; font-weight: 600; transition:.15s; }
 .connect:active { transform: scale(.97); }
 #status { margin-top: 16px; font-size: 15px; color: #8a90a6; min-height: 20px; }
 .online { color: #40ff80; }
-
-/* shared status icon */
 .icon { width: 64px; height: 64px; margin: 6px auto 16px; border-radius: 50%;
-  display: none; align-items: center; justify-content: center;
-  font-size: 33px; color: #050816; animation: pop .4s ease; }
-.check { background: #40ff80; }
-.cross { background: #ff5468; }
+  display: none; align-items: center; justify-content: center; font-size: 33px;
+  color: #050816; animation: pop .4s ease; }
+.check { background: #40ff80; } .cross { background: #ff5468; }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-
-.spinner { width: 42px; height: 42px; margin: 6px auto 0;
-  border: 4px solid #2a3148; border-top-color: #4d8dff; border-radius: 50%;
-  animation: spin 0.9s linear infinite; display: none; }
+.spinner { width: 42px; height: 42px; margin: 6px auto 0; border: 4px solid #2a3148;
+  border-top-color: #4d8dff; border-radius: 50%; animation: spin .9s linear infinite; display:none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .hidden { display: none !important; }
-
 #gamePanel { display: none; margin-top: 4px; animation: rise .4s ease; }
 @keyframes rise { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform:none;} }
 .gametag { font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
   color: #6ea8ff; margin-bottom: 14px; font-weight: 600; }
-#pad { height: 320px; width: 96px; margin: 0 auto; background: #0a0e1c;
-  border: 1px solid #2a3148; border-radius: 24px; position: relative;
-  touch-action: none; overflow: hidden; }
+/* pong pad */
+#pad { height: 300px; width: 96px; margin: 0 auto; background: #0a0e1c;
+  border: 1px solid #2a3148; border-radius: 24px; position: relative; touch-action: none; overflow: hidden; }
 #paddle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 70px; height: 70px; border-radius: 18px;
   background: linear-gradient(180deg, #6ea8ff, #4d8dff);
   box-shadow: 0 0 28px rgba(77,141,255,.65); }
+/* ttt grid */
+#ttt { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  width: 270px; margin: 0 auto; }
+#ttt button { aspect-ratio: 1; border-radius: 16px; background: #16203a;
+  color: #fff; font-size: 40px; font-weight: 800; transition: .12s; }
+#ttt button:active { transform: scale(.94); }
+#ttt button.x { color: #6ea8ff; }
+#ttt button.o { color: #ff8c8c; }
 .hint { font-size: 13px; color: #8a90a6; margin-top: 12px; }
-
 .waiting { display: none; }
-.waiting .pulse {
-  width: 54px; height: 54px; margin: 4px auto 16px; border-radius: 50%;
-  background: rgba(77,141,255,.15); border: 2px solid #4d8dff;
-  animation: pulse 1.6s ease-in-out infinite;
-}
+.waiting .pulse { width: 54px; height: 54px; margin: 4px auto 16px; border-radius: 50%;
+  background: rgba(77,141,255,.15); border: 2px solid #4d8dff; animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { transform: scale(1); opacity:.7; } 50% { transform: scale(1.12); opacity:1; } }
 </style>
 </head>
@@ -90,7 +84,8 @@ button { border: none; cursor: pointer; font-family: inherit; }
   <div id="gamePanel">
     <div class="gametag" id="gameName">Ping Pong</div>
     <div id="pad"><div id="paddle"></div></div>
-    <div class="hint">Drag up / down to move your paddle</div>
+    <div id="ttt"></div>
+    <div class="hint" id="hint">Drag up / down to move your paddle</div>
   </div>
 
   <div id="status"></div>
@@ -98,158 +93,169 @@ button { border: none; cursor: pointer; font-family: inherit; }
 
 <script>
 const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
-const GAMES = { 1: "Ping Pong", 2: "Ping Pong", 3: "Ping Pong" };
+const GAMES = { pingpong: "Ping Pong", tictactoe: "Tic Tac Toe" };
 let code = "", linked = false, seated = false, padVal = 0.5, dragging = false;
-let sendTimer = null, lastSent = 0;
+let curGame = "", myTurn = false, board = [0,0,0,0,0,0,0,0,0], you = 0;
+let lastSent = 0;
 const $ = id => document.getElementById(id);
 const setStatus = t => $("status").innerHTML = t;
 
-/* ---------- views ---------- */
-function hideIcons() { $("check").style.display = "none"; $("cross").style.display = "none"; }
-function viewForm() {
-  $("form").classList.remove("hidden");
-  $("spinner").style.display = "none";
-  $("waiting").style.display = "none";
-  $("gamePanel").style.display = "none";
-  $("card").classList.remove("compact");
-  hideIcons();
+function hideIcons(){ $("check").style.display="none"; $("cross").style.display="none"; }
+function viewForm(){ $("form").classList.remove("hidden"); $("spinner").style.display="none";
+  $("waiting").style.display="none"; $("gamePanel").style.display="none"; $("card").classList.remove("compact"); hideIcons(); }
+function viewConnecting(){ $("form").classList.add("hidden"); $("spinner").style.display="block";
+  $("waiting").style.display="none"; $("gamePanel").style.display="none"; hideIcons(); }
+function viewWaiting(msg){ $("form").classList.add("hidden"); $("spinner").style.display="none";
+  $("gamePanel").style.display="none"; $("waiting").style.display="block"; $("card").classList.add("compact");
+  $("waitMsg").innerText = msg || "Sit down at a table to play"; }
+function viewGame(game){
+  $("form").classList.add("hidden"); $("spinner").style.display="none";
+  $("waiting").style.display="none"; $("gamePanel").style.display="block"; $("card").classList.add("compact");
+  curGame = game;
+  $("gameName").innerText = GAMES[game] || "Minigame";
+  $("pad").style.display = game === "pingpong" ? "block" : "none";
+  $("ttt").style.display  = game === "tictactoe" ? "grid" : "none";
+  $("hint").innerText = game === "pingpong" ? "Drag up / down to move your paddle" : "Tap a square to play";
+  if (game === "tictactoe") buildTTT();
 }
-function viewConnecting() {
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "block";
-  $("waiting").style.display = "none";
-  $("gamePanel").style.display = "none";
-  hideIcons();
-}
-function viewWaiting(msg) {
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "none";
-  $("gamePanel").style.display = "none";
-  $("waiting").style.display = "block";
-  $("card").classList.add("compact");
-  $("waitMsg").innerText = msg || "Sit down at a table to play";
-}
-function viewPlaying(station) {
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "none";
-  $("waiting").style.display = "none";
-  $("gamePanel").style.display = "block";
-  $("card").classList.add("compact");
-  $("gameName").innerText = GAMES[station] || "Minigame";
+function showError(msg){
+  $("form").classList.add("hidden"); $("spinner").style.display="none";
+  $("waiting").style.display="none"; $("gamePanel").style.display="none"; $("card").classList.remove("compact");
+  $("check").style.display="none"; $("cross").style.display="flex";
+  setStatus("❌ " + msg);
+  setTimeout(() => { viewForm(); setStatus(""); }, 1600);
 }
 
-/* ---------- connect ---------- */
 async function connect() {
   code = $("code").value.trim();
-
   if (code.length !== 6) { showError("Enter a 6 digit code"); return; }
-
   let data;
   try { data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json(); }
   catch (e) { showError("Connection error"); return; }
-
   if (!data) { showError("Code not found or expired"); return; }
 
-  viewConnecting();
-  setStatus("Connecting…");
-
+  viewConnecting(); setStatus("Connecting…");
   await fetch(FIREBASE + "/connections/" + code + ".json", {
-    method: "PATCH", headers: { "Content-Type": "application/json" },
+    method:"PATCH", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ connected: true })
   });
-
   setTimeout(async () => {
     await fetch(FIREBASE + "/connections/" + code + ".json", {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
+      method:"PATCH", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ verified: true, paddleY: padVal })
     });
     linked = true;
     $("sub").innerText = "Device linked";
     viewWaiting("Sit down at a table to play");
-    setStatus("Connected");
-    $("status").className = "online";
-    setupPad();
-    startSync();
+    setStatus("Connected"); $("status").className = "online";
+    setupPad(); startSync();
   }, 600);
 }
 
-function showError(msg) {
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "none";
-  $("waiting").style.display = "none";
-  $("gamePanel").style.display = "none";
-  $("card").classList.remove("compact");
-  $("check").style.display = "none";
-  $("cross").style.display = "flex";
-  setStatus("❌ " + msg);
-  setTimeout(() => { viewForm(); setStatus(""); }, 1600);
-}
-
-/* ---------- pad ---------- */
+/* ---- pong pad ---- */
 function setupPad() {
   const pad = $("pad"), paddle = $("paddle");
-
   function apply(clientY) {
     const r = pad.getBoundingClientRect();
     padVal = Math.min(1, Math.max(0, (clientY - r.top) / r.height));
     paddle.style.top = (padVal * 100) + "%";
-    sendNow();
+    sendPaddle();
   }
-
-  // send immediately while dragging, throttled to ~30ms
-  window.sendNow = function() {
-    if (!linked || !seated) return;
-    const now = performance.now();
-    if (now - lastSent < 30) return;
-    lastSent = now;
-    fetch(FIREBASE + "/connections/" + code + ".json", {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paddleY: padVal })
-    });
-  };
-
-  const start = e => { dragging = true; apply((e.touches ? e.touches[0] : e).clientY); e.preventDefault(); };
-  const move = e => { if (dragging) { apply((e.touches ? e.touches[0] : e).clientY); e.preventDefault(); } };
+  const start = e => { dragging = true; apply((e.touches?e.touches[0]:e).clientY); e.preventDefault(); };
+  const move = e => { if (dragging) { apply((e.touches?e.touches[0]:e).clientY); e.preventDefault(); } };
   const end = () => { dragging = false; };
-
-  pad.addEventListener("touchstart", start, { passive: false });
-  pad.addEventListener("touchmove", move, { passive: false });
+  pad.addEventListener("touchstart", start, {passive:false});
+  pad.addEventListener("touchmove", move, {passive:false});
   pad.addEventListener("touchend", end);
   pad.addEventListener("mousedown", start);
   window.addEventListener("mousemove", move);
   window.addEventListener("mouseup", end);
 }
+function sendPaddle(){
+  if (!linked || curGame !== "pingpong") return;
+  const now = performance.now();
+  if (now - lastSent < 30) return;
+  lastSent = now;
+  fetch(FIREBASE + "/connections/" + code + ".json", {
+    method:"PATCH", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ paddleY: padVal })
+  });
+}
 
-/* ---------- state sync ---------- */
+/* ---- tic tac toe ---- */
+function buildTTT(){
+  const ttt = $("ttt");
+  if (ttt.childElementCount === 9) { renderTTT(); return; }
+  ttt.innerHTML = "";
+  for (let i = 1; i <= 9; i++){
+    const b = document.createElement("button");
+    b.dataset.cell = i;
+    b.onclick = () => tapCell(i);
+    ttt.appendChild(b);
+  }
+  renderTTT();
+}
+function renderTTT(){
+  const ttt = $("ttt");
+  for (let i = 1; i <= 9; i++){
+    const b = ttt.children[i-1];
+    if (!b) continue;
+    const v = board[i-1];
+    b.textContent = v === 1 ? "X" : v === 2 ? "O" : "";
+    b.className = v === 1 ? "x" : v === 2 ? "o" : "";
+  }
+}
+function tapCell(i){
+  if (!linked || curGame !== "tictactoe") return;
+  if (!myTurn) { setStatus("Not your turn"); return; }
+  if (board[i-1] !== 0) return;
+  const now = Date.now();
+  fetch(FIREBASE + "/connections/" + code + ".json", {
+    method:"PATCH", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ moveCell: i, moveTime: now })
+  });
+}
+
+/* ---- state sync ---- */
 function startSync() {
   setInterval(async () => {
     if (!linked) return;
     let data;
     try { data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json(); }
     catch (e) { return; }
-
     if (!data) {
-      linked = false; seated = false;
+      linked = false; seated = false; curGame = "";
       $("sub").innerText = "Connect your phone to your session";
-      viewForm();
-      $("status").className = "";
-      setStatus("Session ended — scan again");
+      viewForm(); $("status").className = ""; setStatus("Session ended — scan again");
       return;
     }
-
     const nowSeated = !!data.seated;
-    const station = data.station || 0;
+    const game = data.game || "pingpong";
 
     if (nowSeated !== seated) {
       seated = nowSeated;
-      if (seated) { viewPlaying(station); setStatus("Playing"); $("status").className = "online"; }
-      else { viewWaiting("Sit down at a table to play"); setStatus("Standing by"); $("status").className = "online"; }
-    } else if (seated && station) {
-      $("gameName").innerText = GAMES[station] || "Minigame";
+      if (seated) { viewGame(game); setStatus("Playing"); $("status").className = "online"; }
+      else { viewWaiting("Sit down at a table to play"); setStatus("Standing by"); }
+    } else if (seated && game !== curGame) {
+      viewGame(game);
     }
 
-    // heartbeat position while seated (in case drag events pause)
-    if (seated) sendNow();
+    if (seated && curGame === "tictactoe") {
+      // board string like "010200000"
+      if (typeof data.tttBoard === "string" && data.tttBoard.length === 9) {
+        board = data.tttBoard.split("").map(Number);
+      }
+      you = data.tttYou || 0;
+      myTurn = data.tttActive && data.tttTurn === you;
+      renderTTT();
+      if (data.tttWinner === -1) setStatus("Draw!");
+      else if (data.tttWinner === 1) setStatus(you === 1 ? "You win! 🎉" : "X wins");
+      else if (data.tttWinner === 2) setStatus(you === 2 ? "You win! 🎉" : "O wins");
+      else if (data.tttActive) setStatus(myTurn ? "Your turn" : "Opponent's turn");
+      else setStatus("Waiting for opponent…");
+    } else if (seated && curGame === "pingpong") {
+      sendPaddle();
+    }
   }, 40);
 }
 
