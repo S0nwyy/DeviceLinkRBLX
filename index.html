@@ -1,693 +1,163 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>DeviceLink</title>
-
-
 <style>
-
-*{
-box-sizing:border-box;
-font-family:Inter,Arial,sans-serif;
+* { box-sizing: border-box; font-family: Inter, Arial, sans-serif; }
+body {
+  margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 0%, #1b2a5e, #050816 65%);
+  color: #fff; overflow: hidden;
 }
-
-
-body{
-
-margin:0;
-
-height:100vh;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-background:
-radial-gradient(circle at top,#315cff,#050816 60%);
-
-color:white;
-
-overflow:hidden;
-
+.card {
+  width: 92%; max-width: 400px; padding: 34px 28px; border-radius: 28px;
+  background: rgba(18,22,38,.9); border: 1px solid #2a3148;
+  backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  text-align: center; animation: open .5s ease;
 }
-
-
-
-.card{
-
-width:92%;
-
-max-width:430px;
-
-padding:30px;
-
-border-radius:35px;
-
-background:
-rgba(20,25,50,.85);
-
-backdrop-filter:blur(20px);
-
-box-shadow:
-0 0 60px rgba(0,0,0,.5);
-
-text-align:center;
-
-animation:
-open .6s ease;
-
+@keyframes open { from { opacity:0; transform: translateY(20px) scale(.97);} to { opacity:1; transform:none;} }
+h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
+.sub { font-size: 13px; color: #8a90a6; margin-bottom: 22px; }
+input {
+  width: 100%; height: 60px; border: 1px solid #2a3148; outline: none;
+  border-radius: 18px; background: #0a0e1c; color: #fff; font-size: 28px;
+  text-align: center; letter-spacing: 8px; transition: border .2s;
 }
-
-
-
-@keyframes open{
-
-from{
-
-opacity:0;
-
-transform:translateY(30px) scale(.9);
-
+input:focus { border-color: #4d8dff; }
+button { border: none; cursor: pointer; font-family: inherit; }
+.connect {
+  width: 100%; height: 56px; margin-top: 14px; border-radius: 18px;
+  background: #4d8dff; color: #fff; font-size: 18px; font-weight: 600; transition: .15s;
 }
-
-to{
-
-opacity:1;
-
-transform:none;
-
-}
-
-}
-
-
-
-h1{
-
-font-size:40px;
-
-margin:0 0 25px;
-
-}
-
-
-
-input{
-
-width:100%;
-
-height:70px;
-
-border:none;
-
-outline:none;
-
-border-radius:25px;
-
-background:#080c1c;
-
-color:white;
-
-font-size:32px;
-
-text-align:center;
-
-letter-spacing:8px;
-
-}
-
-
-
-button{
-
-border:none;
-
-cursor:pointer;
-
-}
-
-
-
-.connect{
-
-width:100%;
-
-height:60px;
-
-margin-top:20px;
-
-border-radius:25px;
-
-background:#4d8dff;
-
-color:white;
-
-font-size:22px;
-
-font-weight:bold;
-
-transition:.2s;
-
-}
-
-
-
-.connect:active{
-
-transform:scale(.95);
-
-}
-
-
-
-#pattern{
-
-font-size:40px;
-
-min-height:60px;
-
-margin:25px 0;
-
-}
-
-
-
-#buttons{
-
-display:none;
-
-grid-template-columns:1fr 1fr;
-
-gap:15px;
-
-}
-
-
-
-.color{
-
-height:90px;
-
-border-radius:25px;
-
-font-size:45px;
-
-transition:.15s;
-
-}
-
-
-
-.color:active{
-
-transform:scale(.9);
-
-}
-
-
-
-.red{
-
-background:#ff3b3b;
-
-}
-
-
-.blue{
-
-background:#4080ff;
-
-}
-
-
-.green{
-
-background:#40ff80;
-
-}
-
-
-.yellow{
-
-background:#ffe640;
-
-}
-
-
-
-#status{
-
-margin-top:25px;
-
-font-size:20px;
-
-}
-
-
-
-.online{
-
-color:#40ff80;
-
-}
-
-
-
+.connect:active { transform: scale(.97); }
+#pattern { font-size: 38px; min-height: 54px; margin: 20px 0 8px; }
+#buttons { display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.color { height: 84px; border-radius: 18px; font-size: 40px; transition: .12s; }
+.color:active { transform: scale(.92); }
+.red { background: #ff3b3b; } .blue { background: #4080ff; }
+.green { background: #40ff80; } .yellow { background: #ffe640; }
+#status { margin-top: 18px; font-size: 15px; color: #8a90a6; min-height: 20px; }
+.online { color: #40ff80; }
 </style>
-
-
 </head>
-
-
 <body>
-
-
 <div class="card">
+  <h1>DeviceLink</h1>
+  <div class="sub">Connect your phone to your session</div>
 
+  <input id="code" maxlength="6" inputmode="numeric" placeholder="000000">
+  <button class="connect" onclick="connect()">Connect Device</button>
 
-<h1>
-📱 DeviceLink
-</h1>
+  <div id="pattern"></div>
+  <div id="buttons">
+    <button class="color red"    onclick="press('red')">🔴</button>
+    <button class="color blue"   onclick="press('blue')">🔵</button>
+    <button class="color green"  onclick="press('green')">🟢</button>
+    <button class="color yellow" onclick="press('yellow')">🟡</button>
+  </div>
 
-
-
-<input
-id="code"
-maxlength="6"
-inputmode="numeric"
-placeholder="000000"
->
-
-
-
-<button
-class="connect"
-onclick="connect()">
-
-Connect Device
-
-</button>
-
-
-
-
-<div id="pattern"></div>
-
-
-
-
-<div id="buttons">
-
-
-<button
-class="color red"
-onclick="press('red')">
-
-🔴
-
-</button>
-
-
-<button
-class="color blue"
-onclick="press('blue')">
-
-🔵
-
-</button>
-
-
-<button
-class="color green"
-onclick="press('green')">
-
-🟢
-
-</button>
-
-
-<button
-class="color yellow"
-onclick="press('yellow')">
-
-🟡
-
-</button>
-
-
+  <div id="status">Waiting for connection...</div>
 </div>
-
-
-
-
-<div id="status">
-
-Waiting for connection...
-
-</div>
-
-
-
-</div>
-
-
-
 
 <script>
+const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
+let code = "", answer = [], heartbeat, challenge = [];
+const emoji = { red:"🔴", blue:"🔵", green:"🟢", yellow:"🟡" };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = id => document.getElementById(id);
 
+function setStatus(t) { $("status").innerHTML = t; }
 
-const FIREBASE =
-"https://devicelinkrblx-default-rtdb.firebaseio.com";
+async function connect() {
+  code = $("code").value.trim();
+  if (code.length !== 6) { setStatus("❌ Enter a 6 digit code"); return; }
 
+  let data;
+  try { data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json(); }
+  catch (e) { setStatus("❌ Connection error"); return; }
 
+  if (!data) { setStatus("❌ Code not found or expired"); return; }
 
-let code="";
+  challenge = data.challenge || [];
 
-let answer=[];
+  await fetch(FIREBASE + "/connections/" + code + ".json", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connected: true })
+  });
 
-let heartbeat;
+  $("code").style.display = "none";
+  document.querySelector(".connect").style.display = "none";
+  setStatus("🟢 Device connected");
+  $("status").classList.add("online");
 
+  heartbeat = setInterval(() => {
+    fetch(FIREBASE + "/connections/" + code + ".json", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ connected: true })
+    });
+  }, 5000);
 
-
-const emoji={
-
-red:"🔴",
-
-blue:"🔵",
-
-green:"🟢",
-
-yellow:"🟡"
-
-};
-
-
-
-
-
-function sleep(ms){
-
-return new Promise(
-resolve=>setTimeout(resolve,ms)
-);
-
+  await showPattern(challenge);
 }
 
-
-
-
-
-
-
-async function connect(){
-
-
-code =
-document.getElementById("code").value;
-
-
-
-let status =
-document.getElementById("status");
-
-
-
-if(code.length!==6){
-
-status.innerHTML =
-"❌ Enter a 6 digit code";
-
-return;
-
+async function showPattern(pattern) {
+  const box = $("pattern");
+  box.innerHTML = "";
+  for (const color of pattern) {
+    box.innerHTML += emoji[color] + " ";
+    await sleep(750);
+  }
+  await sleep(400);
+  box.innerHTML = "Repeat the pattern";
+  box.style.fontSize = "18px";
+  $("buttons").style.display = "grid";
 }
 
-
-
-
-
-let response =
-await fetch(
-
-FIREBASE+
-"/connections/"+
-code+
-".json"
-
-);
-
-
-
-let data =
-await response.json();
-
-
-
-
-
-if(!data){
-
-status.innerHTML =
-"❌ Code not found";
-
-return;
-
+function press(color) {
+  answer.push(color);
+  setStatus("Selected " + answer.length + "/4");
+  if (answer.length === 4) sendAnswer();
 }
 
+async function sendAnswer() {
+  await fetch(FIREBASE + "/connections/" + code + ".json", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answer: answer })
+  });
+  $("buttons").style.display = "none";
+  $("pattern").innerHTML = "";
+  setStatus("⌛ Checking answer...");
+  answer = [];
 
-
-
-
-await fetch(
-
-FIREBASE+
-"/connections/"+
-code+
-".json",
-
-{
-
-method:"PATCH",
-
-headers:{
-
-"Content-Type":
-"application/json"
-
-},
-
-body:JSON.stringify({
-
-connected:true,
-
-heartbeat:Date.now()
-
-})
-
+  // If wrong, the game clears the answer; poll for a retry
+  setTimeout(async () => {
+    const data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json();
+    if (data && data.verified) {
+      setStatus("✅ Verified! You can return to the game.");
+      $("status").classList.add("online");
+      clearInterval(heartbeat);
+    } else if (data && (!data.answer || data.answer.length === 0)) {
+      setStatus("❌ Wrong pattern — watch again");
+      $("pattern").style.fontSize = "38px";
+      await showPattern(challenge);
+    }
+  }, 1500);
 }
 
-);
-
-
-
-
-
-document.getElementById("code").style.display="none";
-
-document.querySelector(".connect").style.display="none";
-
-
-
-status.innerHTML =
-"🟢 Device Connected";
-
-
-
-await showPattern(data.challenge);
-
-
-
-
-
-heartbeat=setInterval(()=>{
-
-
-fetch(
-
-FIREBASE+
-"/connections/"+
-code+
-".json",
-
-{
-
-method:"PATCH",
-
-headers:{
-
-"Content-Type":
-"application/json"
-
-},
-
-body:JSON.stringify({
-
-heartbeat:Date.now()
-
-})
-
-}
-
-);
-
-
-
-},5000);
-
-
-
-}
-
-
-
-
-
-
-
-async function showPattern(pattern){
-
-
-let box =
-document.getElementById("pattern");
-
-
-
-box.innerHTML="";
-
-
-
-for(let color of pattern){
-
-
-box.innerHTML +=
-emoji[color]+" ";
-
-
-await sleep(800);
-
-
-}
-
-
-
-await sleep(500);
-
-
-
-box.innerHTML =
-"Repeat";
-
-
-
-document.getElementById("buttons")
-.style.display="grid";
-
-
-}
-
-
-
-
-
-
-
-function press(color){
-
-
-answer.push(color);
-
-
-
-document.getElementById("status")
-.innerHTML =
-"Selected "+answer.length+"/4";
-
-
-
-if(answer.length===4){
-
-sendAnswer();
-
-}
-
-
-}
-
-
-
-
-
-
-
-async function sendAnswer(){
-
-
-
-await fetch(
-
-FIREBASE+
-"/connections/"+
-code+
-".json",
-
-{
-
-method:"PATCH",
-
-headers:{
-
-"Content-Type":
-"application/json"
-
-},
-
-body:JSON.stringify({
-
-answer:answer
-
-})
-
-}
-
-);
-
-
-
-document.getElementById("buttons")
-.style.display="none";
-
-
-
-document.getElementById("status")
-.innerHTML =
-"⌛ Checking answer...";
-
-
-
-answer=[];
-
-
-}
-
-
+// Auto-connect if a code came in via the QR link
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(location.search);
+  const c = params.get("code");
+  if (c && c.length === 6) {
+    $("code").value = c;
+    setStatus("Auto-connecting...");
+    connect();
+  }
+});
 </script>
-
-
 </body>
-
 </html>
