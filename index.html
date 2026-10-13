@@ -14,9 +14,9 @@ body {
   width: 92%; max-width: 400px; padding: 34px 26px; border-radius: 28px;
   background: rgba(18,22,38,.92); border: 1px solid #2a3148;
   backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  text-align: center; animation: open .5s ease;
+  text-align: center; transition: .35s ease;
 }
-@keyframes open { from { opacity:0; transform: translateY(20px) scale(.97);} to { opacity:1; transform:none;} }
+.card.compact { padding: 26px; }
 h1 { font-size: 25px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
 .sub { font-size: 13px; color: #8a90a6; margin-bottom: 20px; }
 input {
@@ -38,8 +38,13 @@ button { border: none; cursor: pointer; font-family: inherit; }
   font-size: 33px; color: #050816; animation: pop .4s ease; }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
 .hidden { display: none !important; }
-#padWrap { display: none; margin-top: 6px; animation: open .4s ease; }
-#pad { height: 340px; width: 96px; margin: 0 auto; background: #0a0e1c;
+
+/* game panel — only appears when seated */
+#gamePanel { display: none; margin-top: 4px; animation: rise .4s ease; }
+@keyframes rise { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform:none;} }
+.gametag { font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  color: #6ea8ff; margin-bottom: 14px; font-weight: 600; }
+#pad { height: 320px; width: 96px; margin: 0 auto; background: #0a0e1c;
   border: 1px solid #2a3148; border-radius: 24px; position: relative;
   touch-action: none; overflow: hidden; }
 #paddle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -47,35 +52,86 @@ button { border: none; cursor: pointer; font-family: inherit; }
   background: linear-gradient(180deg, #6ea8ff, #4d8dff);
   box-shadow: 0 0 28px rgba(77,141,255,.65); transition: top .05s linear; }
 .hint { font-size: 13px; color: #8a90a6; margin-top: 12px; }
+
+/* idle waiting view */
+.waiting { display: none; }
+.waiting .pulse {
+  width: 54px; height: 54px; margin: 4px auto 16px; border-radius: 50%;
+  background: rgba(77,141,255,.15); border: 2px solid #4d8dff;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { transform: scale(1); opacity:.7; } 50% { transform: scale(1.12); opacity:1; } }
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="card">
   <h1>DeviceLink</h1>
   <div class="sub" id="sub">Connect your phone to your session</div>
 
+  <!-- 1. code entry -->
   <div id="form">
     <input id="code" maxlength="6" inputmode="numeric" placeholder="000000">
     <button class="connect" onclick="connect()">Connect Device</button>
   </div>
 
+  <!-- 2. connecting -->
   <div class="spinner" id="spinner"></div>
-  <div class="check" id="check">✓</div>
 
-  <div id="padWrap">
+  <!-- 3. linked, waiting to sit -->
+  <div class="waiting" id="waiting">
+    <div class="pulse"></div>
+    <div id="waitMsg">Sit down at a table to play</div>
+  </div>
+
+  <!-- 4. seated — active controller -->
+  <div id="gamePanel">
+    <div class="gametag" id="gameName">Ping Pong</div>
     <div id="pad"><div id="paddle"></div></div>
     <div class="hint">Drag up / down to move your paddle</div>
   </div>
 
-  <div id="status">Waiting for connection...</div>
+  <div id="status"></div>
 </div>
 
 <script>
 const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
+const GAMES = { 1: "Ping Pong", 2: "Ping Pong", 3: "Ping Pong" };
 let code = "", linked = false, seated = false, padVal = 0.5, dragging = false;
 const $ = id => document.getElementById(id);
 const setStatus = t => $("status").innerHTML = t;
 
+/* ---------- views ---------- */
+function viewForm() {
+  $("form").classList.remove("hidden");
+  $("spinner").style.display = "none";
+  $("waiting").style.display = "none";
+  $("gamePanel").style.display = "none";
+  $("card").classList.remove("compact");
+}
+function viewConnecting() {
+  $("form").classList.add("hidden");
+  $("spinner").style.display = "block";
+  $("waiting").style.display = "none";
+  $("gamePanel").style.display = "none";
+}
+function viewWaiting(msg) {
+  $("form").classList.add("hidden");
+  $("spinner").style.display = "none";
+  $("gamePanel").style.display = "none";
+  $("waiting").style.display = "block";
+  $("card").classList.add("compact");
+  $("waitMsg").innerText = msg || "Sit down at a table to play";
+}
+function viewPlaying(station) {
+  $("form").classList.add("hidden");
+  $("spinner").style.display = "none";
+  $("waiting").style.display = "none";
+  $("gamePanel").style.display = "block";
+  $("card").classList.add("compact");
+  $("gameName").innerText = GAMES[station] || "Minigame";
+}
+
+/* ---------- connect ---------- */
 async function connect() {
   code = $("code").value.trim();
   if (code.length !== 6) { setStatus("❌ Enter a 6 digit code"); return; }
@@ -85,8 +141,7 @@ async function connect() {
   catch (e) { setStatus("❌ Connection error"); return; }
   if (!data) { setStatus("❌ Code not found or expired"); return; }
 
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "block";
+  viewConnecting();
   setStatus("Connecting…");
 
   await fetch(FIREBASE + "/connections/" + code + ".json", {
@@ -100,19 +155,18 @@ async function connect() {
       body: JSON.stringify({ verified: true, paddleY: padVal })
     });
     linked = true;
-    $("spinner").style.display = "none";
-    $("check").style.display = "flex";
     $("sub").innerText = "Device linked";
-    setStatus("Sit down at a table to play");
-    $("status").classList.add("online");
+    viewWaiting("Sit down at a table to play");
+    setStatus("Connected", "ok");
+    $("status").className = "online";
     setupPad();
     startSync();
   }, 700);
 }
 
+/* ---------- pad ---------- */
 function setupPad() {
   const pad = $("pad"), paddle = $("paddle");
-
   function apply(clientY) {
     const r = pad.getBoundingClientRect();
     padVal = Math.min(1, Math.max(0, (clientY - r.top) / r.height));
@@ -121,7 +175,6 @@ function setupPad() {
   const start = e => { dragging = true; apply((e.touches ? e.touches[0] : e).clientY); e.preventDefault(); };
   const move = e => { if (dragging) { apply((e.touches ? e.touches[0] : e).clientY); e.preventDefault(); } };
   const end = () => { dragging = false; };
-
   pad.addEventListener("touchstart", start, { passive: false });
   pad.addEventListener("touchmove", move, { passive: false });
   pad.addEventListener("touchend", end);
@@ -130,29 +183,32 @@ function setupPad() {
   window.addEventListener("mouseup", end);
 }
 
-// Poll the game state: show the controller only while the player is seated.
+/* ---------- state sync ---------- */
 function startSync() {
   setInterval(async () => {
     if (!linked) return;
     let data;
     try { data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json(); }
     catch (e) { return; }
-    if (!data) { // session ended
-      linked = false;
-      $("padWrap").style.display = "none";
-      $("form").classList.remove("hidden");
-      $("check").style.display = "none";
+
+    if (!data) { // session gone
+      linked = false; seated = false;
+      $("sub").innerText = "Connect your phone to your session";
+      viewForm();
+      $("status").className = "";
       setStatus("Session ended — scan again");
       return;
     }
 
     const nowSeated = !!data.seated;
+    const station = data.station || 0;
+
     if (nowSeated !== seated) {
       seated = nowSeated;
-      $("padWrap").style.display = seated ? "block" : "none";
-      $("check").style.display = seated ? "none" : "flex";
-      setStatus(seated ? "Play!" : "Sit down at a table to play");
-      $("status").classList.toggle("online", !seated);
+      if (seated) { viewPlaying(station); setStatus("Playing", "ok"); $("status").className = "online"; }
+      else { viewWaiting("Sit down at a table to play"); setStatus("Standing by"); }
+    } else if (seated && station) {
+      $("gameName").innerText = GAMES[station] || "Minigame";
     }
 
     if (seated) {
@@ -165,6 +221,7 @@ function startSync() {
 }
 
 window.addEventListener("load", () => {
+  viewForm();
   const c = new URLSearchParams(location.search).get("code");
   if (c && c.length === 6) { $("code").value = c; connect(); }
 });
