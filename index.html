@@ -10,11 +10,11 @@ body {
   background: radial-gradient(circle at 50% 0%, #1b2a5e, #050816 65%);
   color: #fff; overflow: hidden; touch-action: none;
 }
-.card { width: 92%; max-width: 400px; padding: 34px 26px; border-radius: 28px;
+.card { width: 92%; max-width: 400px; padding: 32px 24px; border-radius: 28px;
   background: rgba(18,22,38,.92); border: 1px solid #2a3148;
   backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
   text-align: center; transition: .35s ease; }
-.card.compact { padding: 26px; }
+.card.compact { padding: 24px; }
 h1 { font-size: 25px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
 .sub { font-size: 13px; color: #8a90a6; margin-bottom: 20px; }
 input { width: 100%; height: 58px; border: 1px solid #2a3148; outline: none;
@@ -40,17 +40,21 @@ button { border: none; cursor: pointer; font-family: inherit; }
 @keyframes rise { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform:none;} }
 .gametag { font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
   color: #6ea8ff; margin-bottom: 14px; font-weight: 600; }
-#pad { height: 300px; width: 96px; margin: 0 auto; background: #0a0e1c;
+#pad { height: 280px; width: 96px; margin: 0 auto; background: #0a0e1c;
   border: 1px solid #2a3148; border-radius: 24px; position: relative; touch-action: none; overflow: hidden; }
 #paddle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 70px; height: 70px; border-radius: 18px;
   background: linear-gradient(180deg, #6ea8ff, #4d8dff);
   box-shadow: 0 0 28px rgba(77,141,255,.65); }
-#ttt { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 270px; margin: 0 auto; }
+#ttt { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 260px; margin: 0 auto; }
 #ttt button { aspect-ratio: 1; border-radius: 16px; background: #16203a; color: #fff;
   font-size: 40px; font-weight: 800; transition: .12s; }
 #ttt button:active { transform: scale(.94); }
 #ttt button.x { color: #6ea8ff; } #ttt button.o { color: #ff8c8c; }
+.actionBtn { width: 100%; height: 50px; margin-top: 16px; border-radius: 16px;
+  background: #4d8dff; color: #fff; font-size: 16px; font-weight: 700; display: none; animation: rise .3s ease; }
+.actionBtn.ghost { background: #222a42; }
+.actionBtn:active { transform: scale(.97); }
 .hint { font-size: 13px; color: #8a90a6; margin-top: 12px; }
 .waiting { display: none; }
 .waiting .pulse { width: 54px; height: 54px; margin: 4px auto 16px; border-radius: 50%;
@@ -81,6 +85,8 @@ button { border: none; cursor: pointer; font-family: inherit; }
     <div class="gametag" id="gameName">Minigame</div>
     <div id="pad"><div id="paddle"></div></div>
     <div id="ttt"></div>
+    <button class="actionBtn" id="botBtn" onclick="playBot()">Play vs Bot</button>
+    <button class="actionBtn" id="againBtn" onclick="playAgain()">Play Again</button>
     <div class="hint" id="hint"></div>
   </div>
 
@@ -92,6 +98,7 @@ const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
 const GAMES = { pingpong: "Ping Pong", tictactoe: "Tic Tac Toe" };
 let code = "", linked = false, seated = false, padVal = 0.5, dragging = false;
 let curGame = "", myTurn = false, board = [0,0,0,0,0,0,0,0,0], you = 0;
+let tttActive = false, tttWinner = 0, tttMode = "waiting";
 let lastSent = 0;
 const $ = id => document.getElementById(id);
 const setStatus = t => $("status").innerHTML = t;
@@ -112,7 +119,9 @@ function viewGame(game){
   $("pad").style.display = game === "pingpong" ? "block" : "none";
   $("ttt").style.display  = game === "tictactoe" ? "grid" : "none";
   $("hint").innerText = game === "pingpong" ? "Drag up / down to move your paddle" : "Tap a square to play";
-  if (game === "tictactoe") buildTTT();
+  $("botBtn").style.display = "none";
+  $("againBtn").style.display = "none";
+  if (game === "tictactoe") { buildTTT(); updateTTTButtons(); }
 }
 function showError(msg){
   $("form").classList.add("hidden"); $("spinner").style.display="none";
@@ -148,7 +157,7 @@ async function connect() {
   }, 600);
 }
 
-/* ---- pong pad ---- */
+/* ---- pong ---- */
 function setupPad() {
   const pad = $("pad"), paddle = $("paddle");
   function apply(clientY) {
@@ -202,12 +211,35 @@ function renderTTT(){
 }
 function tapCell(i){
   if (!linked || curGame !== "tictactoe") return;
-  if (!myTurn) { setStatus("Not your turn"); return; }
+  if (!myTurn || !tttActive) { setStatus("Not your turn"); return; }
   if (board[i-1] !== 0) return;
   fetch(FIREBASE + "/connections/" + code + ".json", {
     method:"PATCH", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ moveCell: i, moveTime: Date.now() })
   });
+}
+function updateTTTButtons(){
+  const over = (tttWinner !== 0);
+  // "Play vs Bot" only when waiting for an opponent (single human seated)
+  $("botBtn").style.display = (tttMode === "waiting" && !over) ? "block" : "none";
+  // "Play Again" when a game is over
+  $("againBtn").style.display = over ? "block" : "none";
+}
+function playBot(){
+  fetch(FIREBASE + "/connections/" + code + ".json", {
+    method:"PATCH", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ wantBot: true, wantBotTime: Date.now() })
+  });
+  $("botBtn").style.display = "none";
+  setStatus("Starting bot game…");
+}
+function playAgain(){
+  fetch(FIREBASE + "/connections/" + code + ".json", {
+    method:"PATCH", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ wantReplay: true, wantReplayTime: Date.now() })
+  });
+  $("againBtn").style.display = "none";
+  setStatus("Restarting…");
 }
 
 /* ---- state sync ---- */
@@ -224,7 +256,7 @@ function startSync() {
       return;
     }
     const nowSeated = !!data.seated;
-    const game = data.game; // may be "" briefly — never guess
+    const game = data.game;
 
     if (nowSeated !== seated) {
       seated = nowSeated;
@@ -243,12 +275,18 @@ function startSync() {
         board = data.tttBoard.split("").map(Number);
       }
       you = data.tttYou || 0;
-      myTurn = !!data.tttActive && data.tttTurn === you;
+      tttActive = !!data.tttActive;
+      tttWinner = data.tttWinner || 0;
+      tttMode = data.tttMode || "waiting";
+      myTurn = tttActive && data.tttTurn === you;
       renderTTT();
-      if (data.tttWinner === -1) setStatus("Draw!");
-      else if (data.tttWinner === 1) setStatus(you === 1 ? "You win! 🎉" : "X wins");
-      else if (data.tttWinner === 2) setStatus(you === 2 ? "You win! 🎉" : "O wins");
-      else if (data.tttActive) setStatus(myTurn ? "Your turn" : "Opponent's turn");
+      updateTTTButtons();
+
+      if (tttWinner === -1) setStatus("Draw! Play again or jump out");
+      else if (tttWinner === 1) setStatus(you === 1 ? "You win! 🎉" : (tttMode === "bot" ? "Bot wins" : "X wins"));
+      else if (tttWinner === 2) setStatus(you === 2 ? "You win! 🎉" : (tttMode === "bot" ? "Bot wins" : "O wins"));
+      else if (tttActive) setStatus(myTurn ? "Your turn" : (tttMode === "bot" ? "Bot thinking…" : "Opponent's turn"));
+      else if (tttMode === "bot") setStatus("Playing vs Bot");
       else setStatus("Waiting for opponent…");
     } else if (seated && curGame === "pingpong") {
       sendPaddle();
