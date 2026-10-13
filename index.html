@@ -40,21 +40,17 @@ button { border: none; cursor: pointer; font-family: inherit; }
 @keyframes rise { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform:none;} }
 .gametag { font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
   color: #6ea8ff; margin-bottom: 14px; font-weight: 600; }
-/* pong pad */
 #pad { height: 300px; width: 96px; margin: 0 auto; background: #0a0e1c;
   border: 1px solid #2a3148; border-radius: 24px; position: relative; touch-action: none; overflow: hidden; }
 #paddle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 70px; height: 70px; border-radius: 18px;
   background: linear-gradient(180deg, #6ea8ff, #4d8dff);
   box-shadow: 0 0 28px rgba(77,141,255,.65); }
-/* ttt grid */
-#ttt { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  width: 270px; margin: 0 auto; }
-#ttt button { aspect-ratio: 1; border-radius: 16px; background: #16203a;
-  color: #fff; font-size: 40px; font-weight: 800; transition: .12s; }
+#ttt { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 270px; margin: 0 auto; }
+#ttt button { aspect-ratio: 1; border-radius: 16px; background: #16203a; color: #fff;
+  font-size: 40px; font-weight: 800; transition: .12s; }
 #ttt button:active { transform: scale(.94); }
-#ttt button.x { color: #6ea8ff; }
-#ttt button.o { color: #ff8c8c; }
+#ttt button.x { color: #6ea8ff; } #ttt button.o { color: #ff8c8c; }
 .hint { font-size: 13px; color: #8a90a6; margin-top: 12px; }
 .waiting { display: none; }
 .waiting .pulse { width: 54px; height: 54px; margin: 4px auto 16px; border-radius: 50%;
@@ -82,10 +78,10 @@ button { border: none; cursor: pointer; font-family: inherit; }
   </div>
 
   <div id="gamePanel">
-    <div class="gametag" id="gameName">Ping Pong</div>
+    <div class="gametag" id="gameName">Minigame</div>
     <div id="pad"><div id="paddle"></div></div>
     <div id="ttt"></div>
-    <div class="hint" id="hint">Drag up / down to move your paddle</div>
+    <div class="hint" id="hint"></div>
   </div>
 
   <div id="status"></div>
@@ -189,7 +185,6 @@ function buildTTT(){
   ttt.innerHTML = "";
   for (let i = 1; i <= 9; i++){
     const b = document.createElement("button");
-    b.dataset.cell = i;
     b.onclick = () => tapCell(i);
     ttt.appendChild(b);
   }
@@ -209,10 +204,9 @@ function tapCell(i){
   if (!linked || curGame !== "tictactoe") return;
   if (!myTurn) { setStatus("Not your turn"); return; }
   if (board[i-1] !== 0) return;
-  const now = Date.now();
   fetch(FIREBASE + "/connections/" + code + ".json", {
     method:"PATCH", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ moveCell: i, moveTime: now })
+    body: JSON.stringify({ moveCell: i, moveTime: Date.now() })
   });
 }
 
@@ -230,23 +224,26 @@ function startSync() {
       return;
     }
     const nowSeated = !!data.seated;
-    const game = data.game || "pingpong";
+    const game = data.game; // may be "" briefly — never guess
 
     if (nowSeated !== seated) {
       seated = nowSeated;
-      if (seated) { viewGame(game); setStatus("Playing"); $("status").className = "online"; }
-      else { viewWaiting("Sit down at a table to play"); setStatus("Standing by"); }
-    } else if (seated && game !== curGame) {
+      if (seated) {
+        if (game) { viewGame(game); setStatus("Playing"); $("status").className = "online"; }
+        else { viewWaiting("Detecting game…"); setStatus(""); }
+      } else {
+        viewWaiting("Sit down at a table to play"); setStatus("Standing by");
+      }
+    } else if (seated && game && game !== curGame) {
       viewGame(game);
     }
 
     if (seated && curGame === "tictactoe") {
-      // board string like "010200000"
       if (typeof data.tttBoard === "string" && data.tttBoard.length === 9) {
         board = data.tttBoard.split("").map(Number);
       }
       you = data.tttYou || 0;
-      myTurn = data.tttActive && data.tttTurn === you;
+      myTurn = !!data.tttActive && data.tttTurn === you;
       renderTTT();
       if (data.tttWinner === -1) setStatus("Draw!");
       else if (data.tttWinner === 1) setStatus(you === 1 ? "You win! 🎉" : "X wins");
