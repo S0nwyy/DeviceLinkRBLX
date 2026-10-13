@@ -31,12 +31,6 @@ button { border: none; cursor: pointer; font-family: inherit; }
   background: #4d8dff; color: #fff; font-size: 18px; font-weight: 600; transition: .15s;
 }
 .connect:active { transform: scale(.97); }
-#pattern { font-size: 38px; min-height: 54px; margin: 20px 0 8px; }
-#buttons { display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-.color { height: 84px; border-radius: 18px; font-size: 40px; transition: .12s; }
-.color:active { transform: scale(.92); }
-.red { background: #ff3b3b; } .blue { background: #4080ff; }
-.green { background: #40ff80; } .yellow { background: #ffe640; }
 #status { margin-top: 18px; font-size: 15px; color: #8a90a6; min-height: 20px; }
 .online { color: #40ff80; }
 </style>
@@ -49,25 +43,14 @@ button { border: none; cursor: pointer; font-family: inherit; }
   <input id="code" maxlength="6" inputmode="numeric" placeholder="000000">
   <button class="connect" onclick="connect()">Connect Device</button>
 
-  <div id="pattern"></div>
-  <div id="buttons">
-    <button class="color red"    onclick="press('red')">🔴</button>
-    <button class="color blue"   onclick="press('blue')">🔵</button>
-    <button class="color green"  onclick="press('green')">🟢</button>
-    <button class="color yellow" onclick="press('yellow')">🟡</button>
-  </div>
-
   <div id="status">Waiting for connection...</div>
 </div>
 
 <script>
 const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
-let code = "", answer = [], heartbeat, challenge = [];
-const emoji = { red:"🔴", blue:"🔵", green:"🟢", yellow:"🟡" };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+let code = "", heartbeat;
 const $ = id => document.getElementById(id);
-
-function setStatus(t) { $("status").innerHTML = t; }
+const setStatus = t => $("status").innerHTML = t;
 
 async function connect() {
   code = $("code").value.trim();
@@ -79,76 +62,29 @@ async function connect() {
 
   if (!data) { setStatus("❌ Code not found or expired"); return; }
 
-  challenge = data.challenge || [];
-
+  // Mark as connected
   await fetch(FIREBASE + "/connections/" + code + ".json", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ connected: true })
+    body: JSON.stringify({ connected: true, verified: true })
   });
 
   $("code").style.display = "none";
   document.querySelector(".connect").style.display = "none";
-  setStatus("🟢 Device connected");
+  setStatus("✅ Device connected — return to the game");
   $("status").classList.add("online");
 
+  // Keep the session alive
   heartbeat = setInterval(() => {
     fetch(FIREBASE + "/connections/" + code + ".json", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ connected: true })
+      body: JSON.stringify({ connected: true, verified: true })
     });
   }, 5000);
-
-  await showPattern(challenge);
 }
 
-async function showPattern(pattern) {
-  const box = $("pattern");
-  box.innerHTML = "";
-  for (const color of pattern) {
-    box.innerHTML += emoji[color] + " ";
-    await sleep(750);
-  }
-  await sleep(400);
-  box.innerHTML = "Repeat the pattern";
-  box.style.fontSize = "18px";
-  $("buttons").style.display = "grid";
-}
-
-function press(color) {
-  answer.push(color);
-  setStatus("Selected " + answer.length + "/4");
-  if (answer.length === 4) sendAnswer();
-}
-
-async function sendAnswer() {
-  await fetch(FIREBASE + "/connections/" + code + ".json", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answer: answer })
-  });
-  $("buttons").style.display = "none";
-  $("pattern").innerHTML = "";
-  setStatus("⌛ Checking answer...");
-  answer = [];
-
-  // If wrong, the game clears the answer; poll for a retry
-  setTimeout(async () => {
-    const data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json();
-    if (data && data.verified) {
-      setStatus("✅ Verified! You can return to the game.");
-      $("status").classList.add("online");
-      clearInterval(heartbeat);
-    } else if (data && (!data.answer || data.answer.length === 0)) {
-      setStatus("❌ Wrong pattern — watch again");
-      $("pattern").style.fontSize = "38px";
-      await showPattern(challenge);
-    }
-  }, 1500);
-}
-
-// Auto-connect if a code came in via the QR link
+// Auto-connect when opened from the QR link (?code=123456)
 window.addEventListener("load", () => {
   const params = new URLSearchParams(location.search);
   const c = params.get("code");
