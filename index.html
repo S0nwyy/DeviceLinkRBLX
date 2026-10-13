@@ -1,63 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DeviceLink</title>
 <style>
-* { box-sizing: border-box; font-family: Inter, Arial, sans-serif; -webkit-user-select:none; user-select:none; }
+* { box-sizing: border-box; font-family: Inter, Arial, sans-serif; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
 body {
   margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 0%, #1b2a5e, #050816 65%);
-  color: #fff; overflow: hidden;
+  color: #fff; overflow: hidden; touch-action: none;
 }
 .card {
-  width: 92%; max-width: 400px; padding: 40px 28px; border-radius: 28px;
-  background: rgba(18,22,38,.9); border: 1px solid #2a3148;
+  width: 92%; max-width: 400px; padding: 36px 26px; border-radius: 28px;
+  background: rgba(18,22,38,.92); border: 1px solid #2a3148;
   backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
   text-align: center; animation: open .5s ease;
 }
 @keyframes open { from { opacity:0; transform: translateY(20px) scale(.97);} to { opacity:1; transform:none;} }
-h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
-.sub { font-size: 13px; color: #8a90a6; margin-bottom: 22px; }
+h1 { font-size: 25px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
+.sub { font-size: 13px; color: #8a90a6; margin-bottom: 20px; }
 input {
-  width: 100%; height: 60px; border: 1px solid #2a3148; outline: none;
-  border-radius: 18px; background: #0a0e1c; color: #fff; font-size: 28px;
+  width: 100%; height: 58px; border: 1px solid #2a3148; outline: none;
+  border-radius: 18px; background: #0a0e1c; color: #fff; font-size: 27px;
   text-align: center; letter-spacing: 8px;
 }
 button { border: none; cursor: pointer; font-family: inherit; }
 .connect {
-  width: 100%; height: 56px; margin-top: 14px; border-radius: 18px;
-  background: #4d8dff; color: #fff; font-size: 18px; font-weight: 600;
+  width: 100%; height: 54px; margin-top: 14px; border-radius: 18px;
+  background: #4d8dff; color: #fff; font-size: 17px; font-weight: 600;
 }
-#status { margin-top: 18px; font-size: 15px; color: #8a90a6; min-height: 20px; }
+#status { margin-top: 16px; font-size: 15px; color: #8a90a6; min-height: 20px; }
 .online { color: #40ff80; }
-
 .spinner {
-  width: 44px; height: 44px; margin: 6px auto 0;
+  width: 42px; height: 42px; margin: 6px auto 0;
   border: 4px solid #2a3148; border-top-color: #4d8dff;
   border-radius: 50%; animation: spin 0.9s linear infinite; display: none;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .check {
-  width: 66px; height: 66px; margin: 8px auto 18px; border-radius: 50%;
+  width: 64px; height: 64px; margin: 6px auto 16px; border-radius: 50%;
   background: #40ff80; display: none; align-items: center; justify-content: center;
-  font-size: 34px; color: #050816; animation: pop .4s ease;
+  font-size: 33px; color: #050816; animation: pop .4s ease;
 }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
 .hidden { display: none !important; }
 
-/* paddle control */
+#padWrap { display: none; margin-top: 6px; }
 #pad {
-  display: none; height: 320px; margin: 10px auto 0; width: 90px;
-  background: #0a0e1c; border: 1px solid #2a3148; border-radius: 22px;
-  position: relative; touch-action: none;
+  height: 340px; width: 96px; margin: 0 auto;
+  background: #0a0e1c; border: 1px solid #2a3148; border-radius: 24px;
+  position: relative; touch-action: none; overflow: hidden;
 }
 #paddle {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  width: 64px; height: 64px; border-radius: 16px;
-  background: #4d8dff; box-shadow: 0 0 24px rgba(77,141,255,.6);
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px; height: 70px; border-radius: 18px;
+  background: linear-gradient(180deg, #6ea8ff, #4d8dff);
+  box-shadow: 0 0 28px rgba(77,141,255,.65);
 }
-.hint { font-size: 13px; color: #8a90a6; margin-top: 14px; }
+.hint { font-size: 13px; color: #8a90a6; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -73,15 +74,17 @@ button { border: none; cursor: pointer; font-family: inherit; }
   <div class="spinner" id="spinner"></div>
   <div class="check" id="check">✓</div>
 
-  <div id="pad"><div id="paddle"></div></div>
-  <div class="hint" id="hint"></div>
+  <div id="padWrap">
+    <div id="pad"><div id="paddle"></div></div>
+    <div class="hint">Drag up / down to move your paddle</div>
+  </div>
 
   <div id="status">Waiting for connection...</div>
 </div>
 
 <script>
 const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
-let code = "", linked = false, lastSent = 0;
+let code = "", linked = false, padVal = 0.5, dragging = false;
 const $ = id => document.getElementById(id);
 const setStatus = t => $("status").innerHTML = t;
 
@@ -106,7 +109,7 @@ async function connect() {
   setTimeout(async () => {
     await fetch(FIREBASE + "/connections/" + code + ".json", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ verified: true })
+      body: JSON.stringify({ verified: true, paddleY: padVal })
     });
     setTimeout(showController, 700);
   }, 700);
@@ -119,57 +122,47 @@ function showController() {
   $("status").innerHTML = "Sit down at the table to play";
   $("status").classList.add("online");
   linked = true;
-  $("pad").style.display = "block";
-  $("hint").innerText = "Drag to move your paddle";
-  centerPaddle();
-  startPadInput();
+  $("padWrap").style.display = "block";
+  setupPad();
+  // Keep pushing the paddle position so the game always has the latest value
+  setInterval(() => {
+    if (linked) {
+      fetch(FIREBASE + "/connections/" + code + ".json", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paddleY: padVal })
+      });
+    }
+  }, 60);
 }
 
-// ---- paddle control ----
-const pad = $("pad"), paddle = $("paddle");
-let padHeight = 320, paddleH = 64, padVal = 0.5;
+function setupPad() {
+  const pad = $("pad"), paddle = $("paddle");
 
-function centerPaddle() {
-  const r = pad.getBoundingClientRect();
-  padHeight = r.height;
-  movePaddleTo(0.5);
-}
+  function apply(clientY) {
+    const r = pad.getBoundingClientRect();
+    let v = (clientY - r.top) / r.height;
+    padVal = Math.min(1, Math.max(0, v));
+    paddle.style.top = (padVal * 100) + "%";
+  }
 
-function movePaddleTo(v) {
-  padVal = Math.min(1, Math.max(0, v));
-  const maxY = padHeight - paddleH;
-  paddle.style.top = (padVal * maxY) + "px";
-}
+  const start = e => {
+    dragging = true;
+    apply((e.touches ? e.touches[0] : e).clientY);
+    e.preventDefault();
+  };
+  const move = e => {
+    if (!dragging) return;
+    apply((e.touches ? e.touches[0] : e).clientY);
+    e.preventDefault();
+  };
+  const end = () => { dragging = false; };
 
-function sendVal() {
-  const now = Date.now();
-  if (now - lastSent < 50) return;
-  lastSent = now;
-  fetch(FIREBASE + "/connections/" + code + ".json", {
-    method: "PATCH", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ paddleY: padVal })
-  });
-}
-
-function handleMove(clientY) {
-  const r = pad.getBoundingClientRect();
-  const y = clientY - r.top - paddleH / 2;
-  movePaddleTo(y / (r.height - paddleH));
-  sendVal();
-}
-
-let dragging = false;
-function startPadInput() {
-  const down = e => { dragging = true; handleMove(e.touches ? e.touches[0].clientY : e.clientY); e.preventDefault(); };
-  const move = e => { if (dragging) { handleMove(e.touches ? e.touches[0].clientY : e.clientY); e.preventDefault(); } };
-  const up = () => { dragging = false; };
-
-  pad.addEventListener("touchstart", down, { passive: false });
+  pad.addEventListener("touchstart", start, { passive: false });
   pad.addEventListener("touchmove", move, { passive: false });
-  pad.addEventListener("touchend", up);
-  pad.addEventListener("mousedown", down);
+  pad.addEventListener("touchend", end);
+  pad.addEventListener("mousedown", start);
   window.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", up);
+  window.addEventListener("mouseup", end);
 }
 
 window.addEventListener("load", () => {
