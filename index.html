@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>DeviceLink</title>
 <style>
-* { box-sizing: border-box; font-family: Inter, Arial, sans-serif; }
+* { box-sizing: border-box; font-family: Inter, Arial, sans-serif; -webkit-user-select:none; user-select:none; }
 body {
   margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 0%, #1b2a5e, #050816 65%);
@@ -14,7 +14,7 @@ body {
   width: 92%; max-width: 400px; padding: 40px 28px; border-radius: 28px;
   background: rgba(18,22,38,.9); border: 1px solid #2a3148;
   backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  text-align: center; animation: open .5s ease; transition: .3s;
+  text-align: center; animation: open .5s ease;
 }
 @keyframes open { from { opacity:0; transform: translateY(20px) scale(.97);} to { opacity:1; transform:none;} }
 h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
@@ -22,41 +22,46 @@ h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; letter-spacing:.5px; }
 input {
   width: 100%; height: 60px; border: 1px solid #2a3148; outline: none;
   border-radius: 18px; background: #0a0e1c; color: #fff; font-size: 28px;
-  text-align: center; letter-spacing: 8px; transition: border .2s;
+  text-align: center; letter-spacing: 8px;
 }
-input:focus { border-color: #4d8dff; }
 button { border: none; cursor: pointer; font-family: inherit; }
 .connect {
   width: 100%; height: 56px; margin-top: 14px; border-radius: 18px;
-  background: #4d8dff; color: #fff; font-size: 18px; font-weight: 600; transition: .15s;
+  background: #4d8dff; color: #fff; font-size: 18px; font-weight: 600;
 }
-.connect:active { transform: scale(.97); }
 #status { margin-top: 18px; font-size: 15px; color: #8a90a6; min-height: 20px; }
 .online { color: #40ff80; }
 
-/* spinner */
 .spinner {
   width: 44px; height: 44px; margin: 6px auto 0;
   border: 4px solid #2a3148; border-top-color: #4d8dff;
-  border-radius: 50%; animation: spin 0.9s linear infinite;
-  display: none;
+  border-radius: 50%; animation: spin 0.9s linear infinite; display: none;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* success check */
 .check {
   width: 66px; height: 66px; margin: 8px auto 18px; border-radius: 50%;
   background: #40ff80; display: none; align-items: center; justify-content: center;
   font-size: 34px; color: #050816; animation: pop .4s ease;
 }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-
-.fade-out { opacity: 0; transform: translateY(-10px); transition: .4s; }
 .hidden { display: none !important; }
+
+/* paddle control */
+#pad {
+  display: none; height: 320px; margin: 10px auto 0; width: 90px;
+  background: #0a0e1c; border: 1px solid #2a3148; border-radius: 22px;
+  position: relative; touch-action: none;
+}
+#paddle {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 64px; height: 64px; border-radius: 16px;
+  background: #4d8dff; box-shadow: 0 0 24px rgba(77,141,255,.6);
+}
+.hint { font-size: 13px; color: #8a90a6; margin-top: 14px; }
 </style>
 </head>
 <body>
-<div class="card" id="card">
+<div class="card">
   <h1>DeviceLink</h1>
   <div class="sub" id="sub">Connect your phone to your session</div>
 
@@ -68,28 +73,17 @@ button { border: none; cursor: pointer; font-family: inherit; }
   <div class="spinner" id="spinner"></div>
   <div class="check" id="check">✓</div>
 
+  <div id="pad"><div id="paddle"></div></div>
+  <div class="hint" id="hint"></div>
+
   <div id="status">Waiting for connection...</div>
 </div>
 
 <script>
 const FIREBASE = "https://devicelinkrblx-default-rtdb.firebaseio.com";
-let code = "";
+let code = "", linked = false, lastSent = 0;
 const $ = id => document.getElementById(id);
 const setStatus = t => $("status").innerHTML = t;
-
-function showSpinner(msg) {
-  $("form").classList.add("hidden");
-  $("spinner").style.display = "block";
-  setStatus(msg || "Connecting…");
-}
-
-function showSuccess() {
-  $("spinner").style.display = "none";
-  $("check").style.display = "flex";
-  $("sub").innerText = "Device linked";
-  $("status").innerHTML = "Start a game to continue";
-  $("status").classList.add("online");
-}
 
 async function connect() {
   code = $("code").value.trim();
@@ -98,35 +92,89 @@ async function connect() {
   let data;
   try { data = await (await fetch(FIREBASE + "/connections/" + code + ".json")).json(); }
   catch (e) { setStatus("❌ Connection error"); return; }
-
   if (!data) { setStatus("❌ Code not found or expired"); return; }
 
-  showSpinner("Connecting…");
+  $("form").classList.add("hidden");
+  $("spinner").style.display = "block";
+  setStatus("Connecting…");
 
-  // Mark connected, then verified (two-step so the game shows the spinner briefly)
   await fetch(FIREBASE + "/connections/" + code + ".json", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: "PATCH", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ connected: true })
   });
 
   setTimeout(async () => {
     await fetch(FIREBASE + "/connections/" + code + ".json", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ verified: true })
     });
-    setTimeout(showSuccess, 700);
+    setTimeout(showController, 700);
   }, 700);
 }
 
-// Auto-connect when opened from the QR link (?code=123456)
+function showController() {
+  $("spinner").style.display = "none";
+  $("check").style.display = "flex";
+  $("sub").innerText = "Device linked";
+  $("status").innerHTML = "Sit down at the table to play";
+  $("status").classList.add("online");
+  linked = true;
+  $("pad").style.display = "block";
+  $("hint").innerText = "Drag to move your paddle";
+  centerPaddle();
+  startPadInput();
+}
+
+// ---- paddle control ----
+const pad = $("pad"), paddle = $("paddle");
+let padHeight = 320, paddleH = 64, padVal = 0.5;
+
+function centerPaddle() {
+  const r = pad.getBoundingClientRect();
+  padHeight = r.height;
+  movePaddleTo(0.5);
+}
+
+function movePaddleTo(v) {
+  padVal = Math.min(1, Math.max(0, v));
+  const maxY = padHeight - paddleH;
+  paddle.style.top = (padVal * maxY) + "px";
+}
+
+function sendVal() {
+  const now = Date.now();
+  if (now - lastSent < 50) return;
+  lastSent = now;
+  fetch(FIREBASE + "/connections/" + code + ".json", {
+    method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paddleY: padVal })
+  });
+}
+
+function handleMove(clientY) {
+  const r = pad.getBoundingClientRect();
+  const y = clientY - r.top - paddleH / 2;
+  movePaddleTo(y / (r.height - paddleH));
+  sendVal();
+}
+
+let dragging = false;
+function startPadInput() {
+  const down = e => { dragging = true; handleMove(e.touches ? e.touches[0].clientY : e.clientY); e.preventDefault(); };
+  const move = e => { if (dragging) { handleMove(e.touches ? e.touches[0].clientY : e.clientY); e.preventDefault(); } };
+  const up = () => { dragging = false; };
+
+  pad.addEventListener("touchstart", down, { passive: false });
+  pad.addEventListener("touchmove", move, { passive: false });
+  pad.addEventListener("touchend", up);
+  pad.addEventListener("mousedown", down);
+  window.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", up);
+}
+
 window.addEventListener("load", () => {
   const c = new URLSearchParams(location.search).get("code");
-  if (c && c.length === 6) {
-    $("code").value = c;
-    connect();
-  }
+  if (c && c.length === 6) { $("code").value = c; connect(); }
 });
 </script>
 </body>
